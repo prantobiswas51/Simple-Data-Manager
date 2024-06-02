@@ -1,8 +1,8 @@
 <?php
 /*
 Plugin Name: Simple Data Manager
-Description: A simple plugin to add and view data.
-Version: 1.1
+Description: A simple plugin to add, view, and edit data.
+Version: 1.2
 Author: Pranto Biswas
 */
 
@@ -39,6 +39,15 @@ function sdm_register_menu() {
         'manage_options',      // Capability
         'sdm-view-data',       // Menu slug
         'sdm_view_data_page'   // Callback function
+    );
+
+    add_submenu_page(
+        null,                  // No parent slug (hidden page)
+        'Edit Data',           // Page title
+        'Edit Data',           // Menu title
+        'manage_options',      // Capability
+        'sdm-edit-data',       // Menu slug
+        'sdm_edit_data_page'   // Callback function
     );
 }
 
@@ -102,6 +111,7 @@ function sdm_view_data_page() {
                     <th class="manage-column column-columnname" scope="col">Name</th>
                     <th class="manage-column column-columnname" scope="col">Email</th>
                     <th class="manage-column column-columnname" scope="col">Message</th>
+                    <th class="manage-column column-columnname" scope="col">Actions</th>
                 </tr>
             </thead>
             <tbody>';
@@ -113,13 +123,64 @@ function sdm_view_data_page() {
                     <td>' . esc_html($row->name) . '</td>
                     <td>' . esc_html($row->email) . '</td>
                     <td>' . esc_html($row->message) . '</td>
+                    <td><a href="admin.php?page=sdm-edit-data&id=' . $row->id . '">Edit</a></td>
                   </tr>';
         }
     } else {
-        echo '<tr><td colspan="4">No data found.</td></tr>';
+        echo '<tr><td colspan="5">No data found.</td></tr>';
     }
 
     echo '</tbody></table>';
+}
+
+// Edit data page callback
+function sdm_edit_data_page() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'simple_data';
+    $id = intval($_GET['id']);
+
+    if (isset($_POST['sdm_data_update'])) {
+        $name = sanitize_text_field($_POST['sdm_name']);
+        $email = sanitize_email($_POST['sdm_email']);
+        $message = sanitize_textarea_field($_POST['sdm_message']);
+
+        $wpdb->update(
+            $table_name,
+            array(
+                'name' => $name,
+                'email' => $email,
+                'message' => $message
+            ),
+            array('id' => $id)
+        );
+
+        echo '<div class="updated"><p>Data updated successfully!</p></div>';
+    }
+
+    $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id));
+
+    if ($row) {
+        echo '<h1>Edit Data</h1>';
+        echo '<form method="POST" action="">
+                <table class="form-table">
+                    <tr valign="top">
+                        <th scope="row"><label for="sdm_name">Name</label></th>
+                        <td><input type="text" id="sdm_name" name="sdm_name" class="regular-text" value="' . esc_attr($row->name) . '" required /></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="sdm_email">Email</label></th>
+                        <td><input type="email" id="sdm_email" name="sdm_email" class="regular-text" value="' . esc_attr($row->email) . '" required /></td>
+                    </tr>
+                    <tr valign="top">
+                        <th scope="row"><label for="sdm_message">Message</label></th>
+                        <td><textarea id="sdm_message" name="sdm_message" class="large-text" rows="5" required>' . esc_textarea($row->message) . '</textarea></td>
+                    </tr>
+                </table>
+                <input type="submit" name="sdm_data_update" class="button-primary" value="Update Data" />
+              </form>';
+    } else {
+        echo '<div class="error"><p>Data not found.</p></div>';
+    }
 }
 
 // Activation hook to create the database table
