@@ -1,8 +1,8 @@
 <?php
 /*
 Plugin Name: Simple Data Manager
-Description: A simple plugin to add, view, and edit data.
-Version: 1.2
+Description: A simple plugin to add, view, edit, and delete data.
+Version: 1.3
 Author: Pranto Biswas
 */
 
@@ -101,9 +101,17 @@ function sdm_view_data_page() {
     global $wpdb;
     $table_name = $wpdb->prefix . 'simple_data';
 
+    // Delete data if delete link is clicked
+    if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['id'])) {
+        $id = intval($_GET['id']);
+        $wpdb->delete($table_name, array('id' => $id));
+        echo '<div class="updated"><p>Data deleted successfully!</p></div>';
+    }
+
     $results = $wpdb->get_results("SELECT * FROM $table_name");
 
     echo '<h1>View Data</h1>';
+    echo '<button><a href="">Add Data</a></button>';
     echo '<table class="widefat fixed" cellspacing="0">
             <thead>
                 <tr>
@@ -123,7 +131,10 @@ function sdm_view_data_page() {
                     <td>' . esc_html($row->name) . '</td>
                     <td>' . esc_html($row->email) . '</td>
                     <td>' . esc_html($row->message) . '</td>
-                    <td><a href="admin.php?page=sdm-edit-data&id=' . $row->id . '">Edit</a></td>
+                    <td>
+                        <a href="admin.php?page=sdm-edit-data&id=' . $row->id . '">Edit</a> | 
+                        <a href="admin.php?page=sdm-view-data&action=delete&id=' . $row->id . '" onclick="return confirm(\'Are you sure you want to delete this item?\');">Delete</a>
+                    </td>
                   </tr>';
         }
     } else {
